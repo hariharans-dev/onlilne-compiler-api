@@ -1,14 +1,12 @@
-// app.js
-const express = require('express');
+const express = require("express");
 const app = express();
 const PORT = 3000;
 
-// Define a route
-app.get('/', (req, res) => {
-  res.send('Hello, Express!');
-});
+app.use(express.json());
 
-// Start the server
+const python_router = require("./routes/python_route");
+app.use("/api/python", python_router);
+
 app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}/`);
 });
