@@ -44,7 +44,7 @@ const python_compiler = (req, res) => {
       fs.unlinkSync(pythonScript);
       if (error) {
         const errorarr = error.message.split(file + '",');
-        return res.status(404).json({ error: errorarr[errorarr.length - 1] });
+        return res.status(200).json({ output: errorarr[errorarr.length - 1] });
       } else if (stderr) {
         return res.status(500).json({ error: stderr });
       } else {
