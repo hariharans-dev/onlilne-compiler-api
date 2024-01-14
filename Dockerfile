@@ -12,6 +12,9 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
+# Copy Python files
+COPY pythonfile/ /usr/src/app/pythonfile/
+
 # Install Python
 RUN apt-get update && apt-get install -y python3
 
