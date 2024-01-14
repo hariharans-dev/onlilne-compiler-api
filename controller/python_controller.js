@@ -25,17 +25,16 @@ const python_compiler = (req, res) => {
   const scriptContent = `#!/usr/bin/env python3\n\n` + req.body.code;
   const userInput = req.body.input;
 
-  fs.writeFileSync(pythonScript, scriptContent, (err) => {
-    if (err) {
-      return res.status(500).json({ message: "internal Server Error" });
-    }
-  });
+  if (!fs.existsSync("pythonfile")) {
+    fs.mkdirSync("pythonfile");
+  }
 
-  fs.writeFileSync(pythonuserinput, userInput, (err) => {
-    if (err) {
-      return res.status(500).json({ message: "internal Server Error" });
-    }
-  });
+  try {
+    fs.writeFileSync(pythonScript, scriptContent);
+    fs.writeFileSync(pythonuserinput, userInput);
+  } catch (err) {
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
 
   exec(
     `python3 ${pythonScript} < ${pythonuserinput}`,
