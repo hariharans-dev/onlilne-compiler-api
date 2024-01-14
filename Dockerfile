@@ -21,7 +21,7 @@ COPY --from=builder /usr/src/app/node_modules /usr/src/app/node_modules
 COPY --from=builder /usr/src/app /usr/src/app
 
 # Copy Python files
-COPY pythonfile /pythonfile
+COPY pythonfile /usr/src/app/pythonfile
 
 # Install Python
 RUN apt-get update && apt-get install -y python3
