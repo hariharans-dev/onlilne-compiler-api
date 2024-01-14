@@ -17,7 +17,10 @@ jobs:
         run: docker login -u ${{secrets.DOCKER_USERNAME}} -p ${{secrets.DOCKER_PASSWORD}}
         
       - name: Build the Docker image
-        run: docker build -t hariharansdeveloper/online-compiler-api:latest .
+        run: |
+          docker build -t hariharansdeveloper/online-compiler-api:latest .
+          docker build -t hariharansdeveloper/online-compiler-api:latest --build-arg CACHEBUST=$(date +%s) .
+      
 
       - name: Push to Docker Hub
         run: docker push hariharansdeveloper/online-compiler-api:latest
