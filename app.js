@@ -4,11 +4,7 @@ const cors = require("cors");
 require("dotenv").config();
 const PORT = process.env.PORT;
 
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL,
-  })
-);
+app.use(cors({ origin: "*" }));
 
 app.use(express.json());
 
