@@ -15,12 +15,13 @@ const generateRandomCode = () => {
 };
 
 const python_compiler = (req, res) => {
+  console.log(req.body);
   const randomCode = generateRandomCode();
 
   const file = randomCode + ".py";
 
-  const pythonScript = "pythonfile/" + randomCode + ".py";
-  const pythonuserinput = "pythonfile/" + randomCode + ".txt";
+  const pythonScript = "tempfile/" + randomCode + ".py";
+  const pythonuserinput = "tempfile/" + randomCode + ".txt";
 
   const scriptContent = `#!/usr/bin/env python3\n\n` + req.body.code;
   const userInput = req.body.input;
@@ -53,6 +54,20 @@ const python_compiler = (req, res) => {
   );
 };
 
-const js_compiler = (req, res) => {};
+const js_compiler = (req, res) => {
+  const command = "node childScript.js";
+
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error: ${error.message}`);
+      return res.status(500).send("Internal Server Error");
+    }
+
+    console.log(`stdout: ${stdout}`);
+    console.error(`stderr: ${stderr}`);
+
+    res.send("Child process executed successfully");
+  });
+};
 
 module.exports = { python_compiler, js_compiler };
