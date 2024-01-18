@@ -26,8 +26,8 @@ const python_compiler = (req, res) => {
   const scriptContent = `#!/usr/bin/env python3\n\n` + req.body.code;
   const userInput = req.body.input;
 
-  if (!fs.existsSync("pythonfile")) {
-    fs.mkdirSync("pythonfile");
+  if (!fs.existsSync("tempfile")) {
+    fs.mkdirSync("tempfile");
   }
 
   try {
@@ -40,8 +40,6 @@ const python_compiler = (req, res) => {
   exec(
     `python3 ${pythonScript} < ${pythonuserinput}`,
     (error, stdout, stderr) => {
-      fs.unlinkSync(pythonuserinput);
-      fs.unlinkSync(pythonScript);
       if (error) {
         const errorarr = error.message.split(file + '",');
         return res.status(200).json({ output: errorarr[errorarr.length - 1] });
@@ -52,22 +50,56 @@ const python_compiler = (req, res) => {
       }
     }
   );
+  fs.unlinkSync(pythonuserinput);
+  fs.unlinkSync(pythonScript);
 };
 
 const js_compiler = (req, res) => {
-  const command = "node childScript.js";
+  console.log(req.body);
+  const randomCode = generateRandomCode();
+
+  const file = randomCode + ".js"; // Changed file extension to .js
+
+  const jsScript = "tempfile/" + randomCode + ".js";
+  const userInputFile = "tempfile/" + randomCode + ".txt";
+
+  const scriptContent = req.body.code;
+  const userInput = req.body.input;
+
+  if (!fs.existsSync("tempfile")) {
+    try {
+      fs.mkdirSync("tempfile");
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+
+  try {
+    fs.writeFileSync(jsScript, scriptContent);
+    fs.writeFileSync(userInputFile, userInput);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+
+  const command = `node ${jsScript} < ${userInputFile}`;
 
   exec(command, (error, stdout, stderr) => {
     if (error) {
-      console.error(`Error: ${error.message}`);
-      return res.status(500).send("Internal Server Error");
+      console.log(error);
+      const errorarr = error.message.split(file + ":");
+      return res
+        .status(200)
+        .json({ output: "line:" + errorarr[errorarr.length - 1] });
+    } else if (stderr) {
+      return res.status(500).json({ error: stderr });
+    } else {
+      return res.status(200).json({ output: stdout });
     }
-
-    console.log(`stdout: ${stdout}`);
-    console.error(`stderr: ${stderr}`);
-
-    res.send("Child process executed successfully");
   });
+  fs.unlinkSync(userInputFile);
+  fs.unlinkSync(jsScript);
 };
 
 module.exports = { python_compiler, js_compiler };

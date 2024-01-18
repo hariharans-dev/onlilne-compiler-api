@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const { check, validationResult } = require("express-validator");
 
-const { python_compiler } = require("../controller/compiler");
+const { python_compiler, js_compiler } = require("../controller/compiler");
 
 const validateRequestBody_python_compiler = [
   (req, res, next) => {
@@ -21,7 +21,28 @@ const validateRequestBody_python_compiler = [
     next();
   },
 ];
-const compiler_middleware = [validateRequestBody_python_compiler];
-router.post("/python", compiler_middleware, python_compiler);
+const python_compiler_middleware = [validateRequestBody_python_compiler];
+router.post("/python", python_compiler_middleware, python_compiler);
+
+const validateRequestBody_js_compiler = [
+  (req, res, next) => {
+    const numberOfFields = Object.keys(req.body).length;
+    if (numberOfFields == 0) {
+      return res.status(400).json({ message: "no feild given" });
+    }
+    next();
+  },
+  check("code").exists(),
+  check("input").exists(),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: "not in proper format" });
+    }
+    next();
+  },
+];
+const js_compiler_middleware = [validateRequestBody_js_compiler];
+router.post("/js", js_compiler_middleware, js_compiler);
 
 module.exports = router;
