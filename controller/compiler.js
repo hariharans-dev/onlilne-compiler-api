@@ -1,7 +1,7 @@
 const { exec } = require("child_process");
 const fs = require("fs");
 
-function generateRandomCode() {
+const generateRandomCode = () => {
   const length = 8;
   const charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let randomCode = "";
@@ -12,7 +12,7 @@ function generateRandomCode() {
   }
 
   return randomCode;
-}
+};
 
 const python_compiler = (req, res) => {
   const randomCode = generateRandomCode();
@@ -52,4 +52,7 @@ const python_compiler = (req, res) => {
     }
   );
 };
-module.exports = { python_compiler };
+
+const js_compiler = (req, res) => {};
+
+module.exports = { python_compiler, js_compiler };

@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const { check, validationResult } = require("express-validator");
 
-const { python_compiler } = require("../controller/python_controller");
+const { python_compiler } = require("../controller/compiler");
 
 const validateRequestBody_python_compiler = [
   (req, res, next) => {
@@ -22,6 +22,6 @@ const validateRequestBody_python_compiler = [
   },
 ];
 const compiler_middleware = [validateRequestBody_python_compiler];
-router.post("/compiler", compiler_middleware, python_compiler);
+router.post("/python", compiler_middleware, python_compiler);
 
 module.exports = router;
