@@ -1,4 +1,5 @@
 const { exec } = require("child_process");
+const { error } = require("console");
 const fs = require("fs");
 
 const generateRandomCode = () => {
@@ -12,6 +13,19 @@ const generateRandomCode = () => {
   }
 
   return randomCode;
+};
+
+const error_file_name_remover = (contents, replacements, errorstr) => {
+  function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+  for (i = 0; i < contents.length; i++) {
+    errorstr = errorstr.replace(
+      new RegExp(escapeRegExp(contents[i]), "g"),
+      replacements[i]
+    );
+  }
+  return errorstr;
 };
 
 const python_compiler = (req, res) => {
@@ -53,4 +67,65 @@ const python_compiler = (req, res) => {
   );
 };
 
-module.exports = { python_compiler };
+const c_compiler = (req, res) => {
+  const randomCode = generateRandomCode();
+
+  const file = "tempfile\\" + randomCode;
+
+  const cScript = "tempfile\\" + randomCode + ".c";
+  const cUserInput = "tempfile\\" + randomCode + ".txt";
+
+  const scriptContent = req.body.code;
+  const userInput = req.body.input;
+
+  if (!fs.existsSync("tempfile")) {
+    fs.mkdirSync("tempfile");
+  }
+
+  try {
+    fs.writeFileSync(cScript, scriptContent);
+    fs.writeFileSync(cUserInput, userInput);
+  } catch (err) {
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+
+  // Compile the C code using gcc
+  exec(
+    `gcc ${cScript} -o tempfile\\${randomCode}`,
+    { shell: "cmd" },
+    (compileError, compileStdout, compileStderr) => {
+      if (compileError || compileStderr) {
+        fs.unlinkSync(cUserInput);
+        fs.unlinkSync(cScript);
+
+        const newerrorstr = error_file_name_remover(
+          [cScript, file],
+          ["file.c", "file"],
+          compileError.message
+        );
+
+        return res.status(200).json({ output: newerrorstr });
+      }
+
+      // Execute the compiled C program with input
+      exec(
+        `tempfile\\${randomCode} < ${cUserInput}`,
+        { shell: "cmd" },
+        (runError, runStdout, runStderr) => {
+          fs.unlinkSync(cUserInput);
+          fs.unlinkSync(cScript);
+
+          if (runError) {
+            return res.status(200).json({ output: runError });
+          } else if (runStderr) {
+            return res.status(500).json({ error: runStderr });
+          } else {
+            return res.status(200).json({ output: runStdout });
+          }
+        }
+      );
+    }
+  );
+};
+
+module.exports = { python_compiler, c_compiler };
