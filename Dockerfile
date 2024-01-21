@@ -20,9 +20,10 @@ COPY --from=builder /usr/src/app/node_modules /usr/src/app/node_modules
 # Copy the rest of the application code
 COPY --from=builder /usr/src/app /usr/src/app
 
-# Install Python
+# Install Python and necessary build dependencies
 RUN apt-get update && \
-    apt-get install -y python3
+    apt-get install -y python3 && \
+    apt-get install -y build-essential
 
 # Install GCC 12.1 from the official GCC releases
 RUN apt-get install -y wget && \
