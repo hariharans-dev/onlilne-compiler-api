@@ -1,5 +1,4 @@
 const { exec } = require("child_process");
-const { error } = require("console");
 const fs = require("fs");
 
 const generateRandomCode = () => {
@@ -95,9 +94,6 @@ const c_compiler = (req, res) => {
     { shell: "cmd" },
     (compileError, compileStdout, compileStderr) => {
       if (compileError || compileStderr) {
-        fs.unlinkSync(cUserInput);
-        fs.unlinkSync(cScript);
-
         const newerrorstr = error_file_name_remover(
           [cScript, file],
           ["file.c", "file"],
@@ -114,6 +110,7 @@ const c_compiler = (req, res) => {
         (runError, runStdout, runStderr) => {
           fs.unlinkSync(cUserInput);
           fs.unlinkSync(cScript);
+          fs.unlinkSync(file + ".exe");
 
           if (runError) {
             return res.status(200).json({ output: runError });
