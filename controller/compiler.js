@@ -27,43 +27,64 @@ const error_file_name_remover = (contents, replacements, errorstr) => {
   return errorstr;
 };
 
+const create_file = (file_names, datas) => {
+  try {
+    for (i = 0; i < file_names.length; i++) {
+      fs.writeFileSync(file_names[i], datas[i]);
+    }
+  } catch (error) {
+    return error;
+  }
+};
+
+const delete_file = (file_names) => {
+  try {
+    for (i = 0; i < file_names.length; i++) {
+      fs.unlinkSync(file_names[i]);
+    }
+  } catch (error) {
+    return error;
+  }
+};
+
 const python_compiler = (req, res) => {
   const randomCode = generateRandomCode();
 
   const file = randomCode + ".py";
 
-  const pythonScript = "tempfile/" + randomCode + ".py";
-  const pythonuserinput = "tempfile/" + randomCode + ".txt";
+  const filepath = "tempfile/" + randomCode + ".py";
+  const inputpath = "tempfile/" + randomCode + ".txt";
 
-  const scriptContent = `#!/usr/bin/env python3\n\n` + req.body.code;
-  const userInput = req.body.input;
-
-  if (!fs.existsSync("tempfile")) {
-    fs.mkdirSync("tempfile");
-  }
+  const code = `#!/usr/bin/env python3\n\n` + req.body.code;
+  const input = req.body.input;
 
   try {
-    fs.writeFileSync(pythonScript, scriptContent);
-    fs.writeFileSync(pythonuserinput, userInput);
+    create_file([filepath, inputpath], [code, input]);
   } catch (err) {
-    return res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({ message: "internal server error" });
   }
 
-  exec(
-    `python3 ${pythonScript} < ${pythonuserinput}`,
-    (error, stdout, stderr) => {
-      fs.unlinkSync(pythonuserinput);
-      fs.unlinkSync(pythonScript);
-      if (error) {
-        const errorarr = error.message.split(file + '",');
-        return res.status(200).json({ output: errorarr[errorarr.length - 1] });
-      } else if (stderr) {
-        return res.status(500).json({ error: stderr });
-      } else {
-        return res.status(200).json({ output: stdout });
-      }
+  exec(`python3 ${filepath} < ${inputpath}`, (error, stdout, stderr) => {
+    try {
+      delete_file([filepath, inputpath]);
+    } catch (error) {
+      return res.status(500).json({ message: "internal server error" });
     }
-  );
+
+    if (error) {
+      //splitting the error message without exposing the file name
+      let errorarr = error.message.split(file + '",');
+      let errorresponse = error_file_name_remover(
+        [filepath, inputpath],
+        ["file.py", "file"],
+        errorarr[errorarr.length - 1]
+      );
+
+      return res.status(200).json({ output: errorresponse });
+    } else {
+      return res.status(200).json({ output: stdout });
+    }
+  });
 };
 
 const c_compiler = (req, res) => {
@@ -71,8 +92,8 @@ const c_compiler = (req, res) => {
 
   const file = "tempfile\\" + randomCode;
 
-  const cScript = "tempfile\\" + randomCode + ".c";
-  const cUserInput = "tempfile\\" + randomCode + ".txt";
+  const cscript = file + ".c";
+  const cinput = file + ".txt";
 
   const scriptContent = req.body.code;
   const userInput = req.body.input;
@@ -82,48 +103,41 @@ const c_compiler = (req, res) => {
   }
 
   try {
-    fs.writeFileSync(cScript, scriptContent);
-    fs.writeFileSync(cUserInput, userInput);
+    fs.writeFileSync(cscript, scriptContent);
+    fs.writeFileSync(cinput, userInput);
   } catch (err) {
-    return res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({ message: "internal server error" });
   }
 
-  // Compile the C code using gcc
   exec(
-    `gcc ${cScript} -o tempfile\\${randomCode}`,
+    `gcc ${cscript} -o tempfile\\${randomCode}`,
     { shell: "cmd" },
     (compileError, compileStdout, compileStderr) => {
       if (compileError || compileStderr) {
-        fs.unlinkSync(cUserInput);
-        fs.unlinkSync(cScript);
+        fs.unlinkSync(cscript);
+        fs.unlinkSync(cinput);
         const newerrorstr = error_file_name_remover(
-          [cScript, file],
+          [cscript, file],
           ["file.c", "file"],
           compileError.message
         );
 
         return res.status(200).json({ output: newerrorstr });
       }
+      fs.unlinkSync(cscript);
 
       // Execute the compiled C program with input
       exec(
-        `tempfile\\${randomCode} < ${cUserInput}`,
+        `tempfile\\${randomCode} < ${cinput}`,
         { shell: "cmd" },
         (runError, runStdout, runStderr) => {
+          fs.unlinkSync(cinput);
+          fs.unlinkSync(file + ".exe");
           if (runError) {
-            fs.unlinkSync(cUserInput);
-            fs.unlinkSync(cScript);
-            fs.unlinkSync(file + ".exe");
             return res.status(200).json({ output: runError });
           } else if (runStderr) {
-            fs.unlinkSync(cUserInput);
-            fs.unlinkSync(cScript);
-            fs.unlinkSync(file + ".exe");
             return res.status(500).json({ output: runStderr });
           } else {
-            fs.unlinkSync(cUserInput);
-            fs.unlinkSync(cScript);
-            fs.unlinkSync(file + ".exe");
             return res.status(200).json({ output: runStdout });
           }
         }
