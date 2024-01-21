@@ -94,6 +94,8 @@ const c_compiler = (req, res) => {
     { shell: "cmd" },
     (compileError, compileStdout, compileStderr) => {
       if (compileError || compileStderr) {
+        fs.unlinkSync(cUserInput);
+        fs.unlinkSync(cScript);
         const newerrorstr = error_file_name_remover(
           [cScript, file],
           ["file.c", "file"],
@@ -108,15 +110,20 @@ const c_compiler = (req, res) => {
         `tempfile\\${randomCode} < ${cUserInput}`,
         { shell: "cmd" },
         (runError, runStdout, runStderr) => {
-          fs.unlinkSync(cUserInput);
-          fs.unlinkSync(cScript);
-          fs.unlinkSync(file + ".exe");
-
           if (runError) {
+            fs.unlinkSync(cUserInput);
+            fs.unlinkSync(cScript);
+            fs.unlinkSync(file + ".exe");
             return res.status(200).json({ output: runError });
           } else if (runStderr) {
-            return res.status(500).json({ error: runStderr });
+            fs.unlinkSync(cUserInput);
+            fs.unlinkSync(cScript);
+            fs.unlinkSync(file + ".exe");
+            return res.status(500).json({ output: runStderr });
           } else {
+            fs.unlinkSync(cUserInput);
+            fs.unlinkSync(cScript);
+            fs.unlinkSync(file + ".exe");
             return res.status(200).json({ output: runStdout });
           }
         }
