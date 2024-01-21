@@ -23,6 +23,9 @@ COPY --from=builder /usr/src/app /usr/src/app
 # Install Python
 RUN apt-get update && apt-get install -y python3
 
+# Install only the C compiler
+RUN apt-get update && apt-get install -y gcc
+
 # Expose the application port
 EXPOSE 3000
 
