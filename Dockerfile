@@ -9,8 +9,8 @@ RUN npm install
 
 COPY . .
 
-# Stage 2: Build the final image with Python
-FROM node:14
+# Stage 2: Build the final image with Python and GCC 12.1
+FROM debian:sid
 
 WORKDIR /usr/src/app
 
@@ -20,30 +20,22 @@ COPY --from=builder /usr/src/app/node_modules /usr/src/app/node_modules
 # Copy the rest of the application code
 COPY --from=builder /usr/src/app /usr/src/app
 
-# Install Python and C compiler
+# Install Python
 RUN apt-get update && \
-    apt-get install -y python3 && \
-    apt-get install -y wget unzip
+    apt-get install -y python3
 
-# Use a base image with a Linux distribution
-FROM debian:bullseye-slim
-
-# Download and install MSYS2 GCC 12.1.0
-WORKDIR /tmp
-RUN wget https://github.com/msys2/msys2-installer/releases/download/2022-03-01/msys2-base-x86_64-2022-03-01.sfx.exe && \
-    chmod +x msys2-base-x86_64-2022-03-01.sfx.exe && \
-    ./msys2-base-x86_64-2022-03-01.sfx.exe -o -d / && \
-    rm msys2-base-x86_64-2022-03-01.sfx.exe && \
-    pacman -Sy --noconfirm && \
-    pacman -S --noconfirm mingw-w64-x86_64-gcc
-
-# Clean up
-RUN apt-get remove -y wget unzip && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# Set the working directory
-WORKDIR /app
+# Install GCC 12.1 from the official GCC releases
+RUN apt-get install -y wget && \
+    wget https://ftp.gnu.org/gnu/gcc/gcc-12.1.0/gcc-12.1.0.tar.gz && \
+    tar xf gcc-12.1.0.tar.gz && \
+    cd gcc-12.1.0 && \
+    ./configure && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf gcc-12.1.0 gcc-12.1.0.tar.gz && \
+    apt-get purge -y wget && \
+    apt-get autoremove -y
 
 # Expose the application port
 EXPOSE 3000
